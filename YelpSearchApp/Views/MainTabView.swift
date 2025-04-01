@@ -14,6 +14,15 @@ struct MainTabView: View {
                 .tabItem {
                     Label("Nearby", systemImage: "magnifyingglass")
                 }
+            
+            FavoritesView()
+                .tabItem {
+                    Label("Favorites", systemImage: "star.fill")
+                }
         }
     }
+}
+
+#Preview {
+    MainTabView()
 }
