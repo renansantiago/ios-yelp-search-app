@@ -15,7 +15,12 @@ class FavoritesRepository {
               let businesses = try? JSONDecoder().decode([Business].self, from: data) else {
             return []
         }
-        return businesses
+        
+        return businesses.map { business in
+            var updated = business
+            updated.isFavorite = true
+            return updated
+        }
     }
 
     func save(_ businesses: [Business]) {

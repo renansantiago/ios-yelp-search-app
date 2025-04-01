@@ -13,6 +13,7 @@ struct Business: Identifiable, Codable, Equatable {
     let imageUrl: String
     let rating: Double
     let url: String
+    var isFavorite: Bool = false
 
     enum CodingKeys: String, CodingKey {
         case id, name, rating, url

@@ -20,46 +20,68 @@ class NearbyViewModel: ObservableObject {
     private var offset = 0
     private var canLoadMore = true
     private var currentSearchTerm = ""
+    private var hasLoadedInitially = false
+    private var favorites: [Business] = []
+    private var initialResults: [Business] = []
+    private  var lastSearchResults: [Business] = []
     
     init(repository: BusinessRepositoryProtocol = BusinessRepository()) {
         self.repository = repository
+        
+        search(term: "")
 
         $searchText
             .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
             .removeDuplicates()
             .sink { [weak self] term in
                 guard let self = self else { return }
-                self.fetchAutocompleteSuggestions(for: term)
-                self.search(term: term)
+                
+                if !term.isEmpty {
+                    self.fetchAutocompleteSuggestions(for: term)
+                    self.search(term: term)
+                }
             }
             .store(in: &cancellables)
     }
     
     func search(term: String) {
-        guard !term.isEmpty else {
-            businesses = []
-            autocompleteSuggestions = []
-            return
+        if term.isEmpty {
+            currentSearchTerm = ""
+            if !initialResults.isEmpty {
+                businesses = initialResults
+                return
+            }
+        } else {
+            currentSearchTerm = term
+            if businesses == lastSearchResults {
+                return
+            }
         }
 
         isLoading = true
         error = nil
         offset = 0
-        currentSearchTerm = term
         canLoadMore = true
 
-        repository.searchBusinesses(term: term, offset: 0)
+        repository.searchBusinesses(term: currentSearchTerm, offset: 0)
             .receive(on: DispatchQueue.main)
             .sink(receiveCompletion: { [weak self] completion in
-                guard let self = self else { return }
-                self.isLoading = false
-                if case .failure(let err) = completion {
-                    self.error = self.userFriendlyError(err)
+                self?.isLoading = false
+                if case .failure(let error) = completion {
+                    self?.error = self?.userFriendlyError(error)
                 }
             }, receiveValue: { [weak self] businesses in
-                self?.businesses = businesses
-                self?.offset = businesses.count
-                self?.canLoadMore = !businesses.isEmpty
+                guard let self = self else { return }
+                let updated = self.applyFavorites(to: businesses)
+                self.businesses = updated
+                self.offset = businesses.count
+                self.canLoadMore = !businesses.isEmpty
+
+                if term.isEmpty {
+                    self.initialResults = updated
+                } else {
+                    self.lastSearchResults = updated
+                }
             })
             .store(in: &cancellables)
     }
@@ -82,6 +104,23 @@ class NearbyViewModel: ObservableObject {
                 self.canLoadMore = !newBusinesses.isEmpty
             })
             .store(in: &cancellables)
+    }
+    
+    func loadFavorites() {
+        if currentSearchTerm.isEmpty {
+            businesses = applyFavorites(to: initialResults)
+        } else {
+            businesses = applyFavorites(to: lastSearchResults)
+        }
+    }
+    
+    private func applyFavorites(to list: [Business]) -> [Business] {
+        let favoriteIDs = Set(FavoritesRepository().load().map { $0.id })
+        return list.map { business in
+            var updated = business
+            updated.isFavorite = favoriteIDs.contains(business.id)
+            return updated
+        }
     }
     
     private func userFriendlyError(_ error: Error) -> String {

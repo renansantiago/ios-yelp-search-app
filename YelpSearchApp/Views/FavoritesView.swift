@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct FavoritesView: View {
+    @Binding var selectedTab: Tab
     @StateObject var viewModel = FavoritesViewModel()
     @State private var selectedBusiness: Business?
 
@@ -17,9 +18,11 @@ struct FavoritesView: View {
                 ForEach(viewModel.favorites) { business in
                     BusinessRowView(
                         business: business,
-                        isFavorite: true,
                         toggleFavorite: {
                             viewModel.toggleFavorite(business)
+                        },
+                        onSelect: {
+                            selectedBusiness = business
                         }
                     )
                     .onTapGesture {
@@ -29,9 +32,14 @@ struct FavoritesView: View {
             }
             .navigationTitle("Favorites")
         }
+        .onAppear {
+            if selectedTab == .favorites {
+                viewModel.loadFavorites()
+            }
+        }
     }
 }
 
 #Preview {
-    FavoritesView()
+    FavoritesView(selectedTab: .constant(.favorites))
 }

@@ -22,10 +22,13 @@ class FavoritesViewModel: ObservableObject {
     }
 
     func toggleFavorite(_ business: Business) {
-        if let index = favorites.firstIndex(of: business) {
+        favorites = repository.load()
+        if let index = favorites.firstIndex(where: { $0.id == business.id }) {
             favorites.remove(at: index)
         } else {
-            favorites.append(business)
+            var updated = business
+            updated.isFavorite = true
+            favorites.append(updated)
         }
         repository.save(favorites)
     }

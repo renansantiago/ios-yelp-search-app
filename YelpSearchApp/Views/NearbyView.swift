@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct NearbyView: View {
+    @Binding var selectedTab: Tab
     @StateObject var viewModel = NearbyViewModel()
     @StateObject var favoritesVM = FavoritesViewModel()
     @State private var selectedBusiness: Business?
@@ -15,9 +16,20 @@ struct NearbyView: View {
     var body: some View {
         NavigationView {
             VStack {
-                TextField("Search...", text: $viewModel.searchText)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .padding()
+                HStack {
+                    TextField("Search...", text: $viewModel.searchText)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+
+                    if !viewModel.searchText.isEmpty {
+                        Button(action: {
+                            viewModel.searchText = ""
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.gray)
+                        }
+                    }
+                }
+                .padding()
                 
                 if !viewModel.autocompleteSuggestions.isEmpty {
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -49,15 +61,23 @@ struct NearbyView: View {
             }
             .navigationTitle("Nearby")
         }
+        .onAppear {
+            if selectedTab == .nearby {
+                viewModel.loadFavorites()
+            }
+        }
     }
 
     @ViewBuilder
     private func BusinessRow(business: Business) -> some View {
         BusinessRowView(
             business: business,
-            isFavorite: favoritesVM.isFavorite(business),
             toggleFavorite: {
                 favoritesVM.toggleFavorite(business)
+                viewModel.loadFavorites()
+            },
+            onSelect: {
+                selectedBusiness = business
             }
         )
         .onTapGesture {
@@ -72,5 +92,5 @@ struct NearbyView: View {
 }
 
 #Preview {
-    NearbyView()
+    NearbyView(selectedTab: .constant(.nearby))
 }
