@@ -9,13 +9,16 @@ import Foundation
 
 class FavoritesViewModel: ObservableObject {
     @Published var favorites: [Business] = []
+    
+    private let repository: FavoritesRepository
 
-    init() {
+    init(repository: FavoritesRepository = FavoritesRepository()) {
+        self.repository = repository
         loadFavorites()
     }
 
     func loadFavorites() {
-        //HANDLE LOAD FAVORITES
+        favorites = repository.load()
     }
 
     func toggleFavorite(_ business: Business) {
@@ -24,7 +27,7 @@ class FavoritesViewModel: ObservableObject {
         } else {
             favorites.append(business)
         }
-        //HANDLE FAVORITE PERSIST
+        repository.save(favorites)
     }
 
     func isFavorite(_ business: Business) -> Bool {

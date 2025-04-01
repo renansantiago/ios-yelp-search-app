@@ -9,7 +9,7 @@ import SwiftUI
 
 struct NearbyView: View {
     @StateObject var viewModel = NearbyViewModel()
-    //TODO - ADD FAVORITE VIEWMODEL RULES
+    @StateObject var favoritesVM = FavoritesViewModel()
     @State private var selectedBusiness: Business?
 
     var body: some View {
@@ -38,9 +38,9 @@ struct NearbyView: View {
     private func BusinessRow(business: Business) -> some View {
         BusinessRowView(
             business: business,
-            isFavorite: false,
+            isFavorite: favoritesVM.isFavorite(business),
             toggleFavorite: {
-                //TODO - HANDLE FAVORITE TOGGLE
+                favoritesVM.toggleFavorite(business)
             }
         )
         .onTapGesture {
