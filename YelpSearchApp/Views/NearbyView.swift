@@ -18,6 +18,23 @@ struct NearbyView: View {
                 TextField("Search...", text: $viewModel.searchText)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding()
+                
+                if !viewModel.autocompleteSuggestions.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack {
+                            ForEach(viewModel.autocompleteSuggestions, id: \.self) { suggestion in
+                                Button(action: {
+                                    viewModel.searchText = suggestion
+                                }) {
+                                    Text(suggestion)
+                                        .padding(8)
+                                        .background(Color(.systemGray5))
+                                        .cornerRadius(8)
+                                }
+                            }
+                        }.padding(.horizontal)
+                    }
+                }
 
                 List {
                     ForEach(viewModel.businesses) { business in

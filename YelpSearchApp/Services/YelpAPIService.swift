@@ -31,4 +31,19 @@ final class YelpAPIService {
             .map { $0.businesses }
             .eraseToAnyPublisher()
     }
+    
+    func autocomplete(term: String) -> AnyPublisher<[SearchTerm], Error> {
+        guard let url = URL(string: "\(Constants.baseURL)/autocomplete?text=\(term)&latitude=\(Constants.defaultLatitude)&longitude=\(Constants.defaultLongitude)") else {
+            return Fail(error: URLError(.badURL)).eraseToAnyPublisher()
+        }
+
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(Constants.apiKey)", forHTTPHeaderField: "Authorization")
+
+        return session.dataTaskPublisher(for: request)
+            .map(\.data)
+            .decode(type: AutocompleteResponse.self, decoder: JSONDecoder())
+            .map { $0.terms }
+            .eraseToAnyPublisher()
+    }
 }

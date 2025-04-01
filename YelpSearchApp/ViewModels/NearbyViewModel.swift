@@ -12,7 +12,8 @@ class NearbyViewModel: ObservableObject {
     @Published var searchText = ""
     @Published var businesses: [Business] = []
     @Published var isLoading = false
-    @Published var error: String?    
+    @Published var error: String?
+    @Published var autocompleteSuggestions: [String] = []
     
     private let repository: BusinessRepositoryProtocol
     private var cancellables = Set<AnyCancellable>()
@@ -28,6 +29,7 @@ class NearbyViewModel: ObservableObject {
             .removeDuplicates()
             .sink { [weak self] term in
                 guard let self = self else { return }
+                self.fetchAutocompleteSuggestions(for: term)
                 self.search(term: term)
             }
             .store(in: &cancellables)
@@ -36,6 +38,7 @@ class NearbyViewModel: ObservableObject {
     func search(term: String) {
         guard !term.isEmpty else {
             businesses = []
+            autocompleteSuggestions = []
             return
         }
 
@@ -93,5 +96,18 @@ class NearbyViewModel: ObservableObject {
         }
 
         return nsError.localizedDescription
+    }
+    
+    func fetchAutocompleteSuggestions(for term: String) {
+        guard !term.isEmpty else {
+            autocompleteSuggestions = []
+            return
+        }
+
+        repository.autocomplete(term: term)
+            .map { $0.map { $0.text } }
+            .replaceError(with: [])
+            .receive(on: DispatchQueue.main)
+            .assign(to: &$autocompleteSuggestions)
     }
 }
