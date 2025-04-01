@@ -14,25 +14,37 @@ struct FavoritesView: View {
 
     var body: some View {
         NavigationView {
-            List {
-                ForEach(viewModel.favorites) { business in
-                    BusinessRowView(
-                        business: business,
-                        toggleFavorite: {
-                            viewModel.toggleFavorite(business)
-                        },
-                        onSelect: {
+            if viewModel.favorites.isEmpty {
+                VStack {
+                    Spacer()
+                    Text("You haven't added any businesses to your favorites yet.")
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding()
+                    Spacer()
+                }
+                .navigationTitle("Favorites")
+            } else {
+                List {
+                    ForEach(viewModel.favorites) { business in
+                        BusinessRowView(
+                            business: business,
+                            toggleFavorite: {
+                                viewModel.toggleFavorite(business)
+                            },
+                            onSelect: {
+                                selectedBusiness = business
+                            }
+                        )
+                        .onTapGesture {
                             selectedBusiness = business
                         }
-                    )
-                    .onTapGesture {
-                        selectedBusiness = business
                     }
                 }
-            }
-            .navigationTitle("Favorites")
-            .sheet(item: $selectedBusiness) { business in
-                BusinessDetailView(business: business)
+                .navigationTitle("Favorites")
+                .sheet(item: $selectedBusiness) { business in
+                    BusinessDetailView(business: business)
+                }
             }
         }
         .onAppear {
