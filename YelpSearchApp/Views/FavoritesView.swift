@@ -31,6 +31,9 @@ struct FavoritesView: View {
                 }
             }
             .navigationTitle("Favorites")
+            .sheet(item: $selectedBusiness) { business in
+                BusinessDetailView(business: business)
+            }
         }
         .onAppear {
             if selectedTab == .favorites {

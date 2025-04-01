@@ -48,18 +48,25 @@ struct NearbyView: View {
                     }
                 }
 
-                List {
-                    ForEach(viewModel.businesses) { business in
-                        BusinessRow(business: business)
-                    }
-
-                    if viewModel.isLoading {
-                        ProgressView()
-                            .frame(maxWidth: .infinity)
+                if let error = viewModel.error {
+                    Text(error).foregroundColor(.red).padding()
+                } else {
+                    List {
+                        ForEach(viewModel.businesses) { business in
+                            BusinessRow(business: business)
+                        }
+                        
+                        if viewModel.isLoading {
+                            ProgressView()
+                                .frame(maxWidth: .infinity)
+                        }
                     }
                 }
             }
             .navigationTitle("Nearby")
+            .sheet(item: $selectedBusiness) { business in
+                BusinessDetailView(business: business)
+            }
         }
         .onAppear {
             if selectedTab == .nearby {
