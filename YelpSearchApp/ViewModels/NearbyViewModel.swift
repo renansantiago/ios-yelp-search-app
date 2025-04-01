@@ -23,7 +23,7 @@ class NearbyViewModel: ObservableObject {
     private var hasLoadedInitially = false
     private var favorites: [Business] = []
     private var initialResults: [Business] = []
-    private  var lastSearchResults: [Business] = []
+    private var lastSearchResults: [Business] = []
     
     init(repository: BusinessRepositoryProtocol = BusinessRepository()) {
         self.repository = repository
@@ -149,4 +149,11 @@ class NearbyViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .assign(to: &$autocompleteSuggestions)
     }
+    
+#if DEBUG
+func _injectInitialResults(_ businesses: [Business]) {
+    self.initialResults = applyFavorites(to: businesses)
+    self.businesses = self.initialResults
+}
+#endif
 }
