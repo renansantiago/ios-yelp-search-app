@@ -24,11 +24,10 @@ class NearbyViewModel: ObservableObject {
     private var favorites: [Business] = []
     private var initialResults: [Business] = []
     private var lastSearchResults: [Business] = []
+    private var hasPerformedInitialSearch = false
     
     init(repository: BusinessRepositoryProtocol = BusinessRepository()) {
         self.repository = repository
-        
-        search(term: "")
 
         $searchText
             .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
@@ -36,31 +35,32 @@ class NearbyViewModel: ObservableObject {
             .sink { [weak self] term in
                 guard let self = self else { return }
                 
-                if !term.isEmpty {
+                if term.isEmpty {
+                    if !self.initialResults.isEmpty {
+                        self.businesses = self.initialResults
+                    } else {
+                        self.search(term: "")
+                    }
+                } else {
                     self.fetchAutocompleteSuggestions(for: term)
                     self.search(term: term)
                 }
             }
             .store(in: &cancellables)
+        
+        search(term: "")
     }
     
     func search(term: String) {
-        if term.isEmpty {
-            currentSearchTerm = ""
-            if !initialResults.isEmpty {
-                businesses = initialResults
-                return
-            }
-        } else {
-            currentSearchTerm = term
-            if businesses == lastSearchResults {
-                return
-            }
+        if term.isEmpty && hasPerformedInitialSearch {
+            businesses = initialResults
+            return
         }
 
         isLoading = true
         error = nil
         offset = 0
+        currentSearchTerm = term
         canLoadMore = true
 
         repository.searchBusinesses(term: currentSearchTerm, offset: 0)
@@ -79,6 +79,7 @@ class NearbyViewModel: ObservableObject {
 
                 if term.isEmpty {
                     self.initialResults = updated
+                    self.hasPerformedInitialSearch = true
                 } else {
                     self.lastSearchResults = updated
                 }
@@ -97,11 +98,18 @@ class NearbyViewModel: ObservableObject {
                 if case .failure(let err) = completion {
                     self?.error = self?.userFriendlyError(err)
                 }
-            }, receiveValue: { [weak self] newBusinesses in
+            }, receiveValue: { [weak self] results in
                 guard let self = self else { return }
-                self.businesses += newBusinesses
-                self.offset += newBusinesses.count
-                self.canLoadMore = !newBusinesses.isEmpty
+                let updated = self.applyFavorites(to: results)
+                self.businesses += updated
+                self.offset += updated.count
+                self.canLoadMore = !updated.isEmpty
+                
+                if currentSearchTerm.isEmpty {
+                    self.initialResults = self.businesses
+                } else {
+                    self.lastSearchResults = self.businesses
+                }
             })
             .store(in: &cancellables)
     }
