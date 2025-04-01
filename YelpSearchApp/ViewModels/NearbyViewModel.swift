@@ -23,7 +23,8 @@ class NearbyViewModel: ObservableObject {
     init(repository: BusinessRepositoryProtocol = BusinessRepository()) {
         self.repository = repository
 
-        $searchText            
+        $searchText
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
             .removeDuplicates()
             .sink { [weak self] term in
                 guard let self = self else { return }
